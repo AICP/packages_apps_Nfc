@@ -137,10 +137,10 @@ public class NfcService implements DeviceHostListener {
     static final int TASK_EE_WIPE = 4;
 
     // Screen state, used by mScreenState
-    static final int SCREEN_STATE_UNKNOWN = 0;
-    static final int SCREEN_STATE_OFF = 1;
-    static final int SCREEN_STATE_ON_LOCKED = 2;
-    static final int SCREEN_STATE_ON_UNLOCKED = 3;
+    public static final int SCREEN_STATE_UNKNOWN = 0;
+    public static final int SCREEN_STATE_OFF = 1;
+    public static final int SCREEN_STATE_ON_LOCKED = 2;
+    public static final int SCREEN_STATE_ON_UNLOCKED = 3;
 
     // Copied from com.android.nfc_extras to avoid library dependency
     // Must keep in sync with com.android.nfc_extras
@@ -155,9 +155,6 @@ public class NfcService implements DeviceHostListener {
     static final int EE_ERROR_LISTEN_MODE = -4;
     static final int EE_ERROR_EXT_FIELD = -5;
     static final int EE_ERROR_NFC_DISABLED = -6;
-
-    /** minimum screen state that enables NFC polling (discovery) */
-    static final int POLLING_MODE = SCREEN_STATE_ON_UNLOCKED;
 
     // Time to wait for NFC controller to initialize before watchdog
     // goes off. This time is chosen large, because firmware download
@@ -1855,7 +1852,8 @@ public class NfcService implements DeviceHostListener {
             }
             try {
                 watchDog.start();
-
+                int pollingMode = (int) Settings.Global.getInt(mContentResolver,
+                Settings.Global.RADIO_NFC_POLLING, SCREEN_STATE_ON_UNLOCKED);
                 if (mDeviceHost.enablePN544Quirks() && mScreenState == SCREEN_STATE_OFF) {
                     /* TODO undo this after the LLCP stack is fixed.
                      * Use a different sequence when turning the screen off to
@@ -1864,7 +1862,7 @@ public class NfcService implements DeviceHostListener {
                      * The async LLCP callback will crash since the routing code
                      * is overwriting globals it relies on.
                      */
-                    if (POLLING_MODE > SCREEN_STATE_OFF) {
+                    if (pollingMode > SCREEN_STATE_OFF) {
                         if (force || mNfcPollingEnabled) {
                             Log.d(TAG, "NFC-C OFF, disconnect");
                             mNfcPollingEnabled = false;
@@ -1912,7 +1910,7 @@ public class NfcService implements DeviceHostListener {
                 }
 
                 // configure NFC-C polling
-                if (mScreenState >= POLLING_MODE) {
+                if (mScreenState >= pollingMode) {
                     if (force || !mNfcPollingEnabled) {
                         Log.d(TAG, "NFC-C ON");
                         mNfcPollingEnabled = true;
