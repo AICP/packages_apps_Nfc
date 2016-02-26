@@ -66,6 +66,7 @@ import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
@@ -227,6 +228,9 @@ public class NfcService implements DeviceHostListener {
 
     private ScreenStateHelper mScreenStateHelper;
     private ForegroundUtils mForegroundUtils;
+
+    private int mNfcSoundMode;
+    private Vibrator mVibrate;
 
     private int mUserId;
     private static NfcService sService;
@@ -392,6 +396,9 @@ public class NfcService implements DeviceHostListener {
         }
         mForegroundUtils = ForegroundUtils.getInstance();
         new EnableDisableTask().execute(TASK_BOOT);  // do blocking boot tasks
+
+        mNfcSoundMode = 0;
+        mVibrate = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
 
         SettingsObserver mSettingsObserver = new SettingsObserver(new Handler());
     }
@@ -652,13 +659,31 @@ public class NfcService implements DeviceHostListener {
             }
             switch (sound) {
                 case SOUND_START:
-                    mSoundPool.play(mStartSound, 1.0f, 1.0f, 0, 0, 1.0f);
+                    if (mNfcSoundMode == 0) {
+                        mSoundPool.play(mStartSound, 1.0f, 1.0f, 0, 0, 1.0f);
+                    } else if (mNfcSoundMode == 1) {
+                        mVibrate.vibrate(50);
+                    } else if (mNfcSoundMode == 2) {
+                        // silence please
+                    }
                     break;
                 case SOUND_END:
-                    mSoundPool.play(mEndSound, 1.0f, 1.0f, 0, 0, 1.0f);
+                    if (mNfcSoundMode == 0) {
+                        mSoundPool.play(mEndSound, 1.0f, 1.0f, 0, 0, 1.0f);
+                    } else if (mNfcSoundMode == 1) {
+                        mVibrate.vibrate(50);
+                    } else if (mNfcSoundMode == 2) {
+                        // silence please
+                    }
                     break;
                 case SOUND_ERROR:
-                    mSoundPool.play(mErrorSound, 1.0f, 1.0f, 0, 0, 1.0f);
+                    if (mNfcSoundMode == 0) {
+                        mSoundPool.play(mErrorSound, 1.0f, 1.0f, 0, 0, 1.0f);
+                    } else if (mNfcSoundMode == 1) {
+                        mVibrate.vibrate(50);
+                    } else if (mNfcSoundMode == 2) {
+                        // silence please
+                    }
                     break;
             }
         }
@@ -2126,12 +2151,19 @@ public class NfcService implements DeviceHostListener {
                     false, this);
             NFC_POLLING_MODE = Settings.System.getInt(resolver,
                     Settings.System.NFC_POLLING_MODE, ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED);
+
+            resolver.registerContentObserver(Settings.System
+                    .getUriFor(Settings.System.NFC_SOUND_MODE),
+                    false, this);
         }
 
         @Override
         public void onChange(boolean selfChange) {
             NFC_POLLING_MODE = Settings.System.getInt(resolver,
                     Settings.System.NFC_POLLING_MODE, ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED);
+
+            mNfcSoundMode = Settings.System.getInt(resolver,
+                    Settings.System.NFC_SOUND_MODE, 0);
         }
     }
 }
