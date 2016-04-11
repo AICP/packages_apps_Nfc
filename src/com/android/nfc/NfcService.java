@@ -397,7 +397,6 @@ public class NfcService implements DeviceHostListener {
         mForegroundUtils = ForegroundUtils.getInstance();
         new EnableDisableTask().execute(TASK_BOOT);  // do blocking boot tasks
 
-        mNfcSoundMode = 0;
         mVibrate = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
 
         SettingsObserver mSettingsObserver = new SettingsObserver(new Handler());
